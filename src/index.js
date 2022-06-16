@@ -1,132 +1,77 @@
-import React from 'react';
+import React, {useContext, useEffect, useMemo, useReducer, useState} from 'react';
 import ReactDOM from 'react-dom/client';
+import axios from "axios";
 import './index.css';
 
 
-const Square = (props) =>
-    (
-        <button className="square" onClick={props.onClick}>
-            {props.value}
-        </button>
+const contextExample = React.createContext("");
+
+const ReducerTemp = (props) => {
+    const initialState = {
+        counter: 0
+    };
+    const [state, dispatch] = useReducer(reducer, initialState)
+    const isEven = useMemo(() => {
+        return state.counter % 2 === 0
+    }, [state.counter])
+    //usecallback = caches the function instance itself. cache function
+    //useMemo = invokes and caches its result. cache result
+    //useRef = get access to dom notes (for example input elements, etc). essentialy useref() is an object that can hold any mutable value. when it changes it holds a ref to the original
+    // so it won't re-render upon changes
+    const reducer = (state, action) => {
+        switch (action.type) {
+            case 'increment':
+                return {...state, counter: state.counter + 1};
+            case 'decrement':
+                return {...state, counter: state.counter - 1};
+            case 'reset':
+                return initialState
+            default:
+                return state
+        }
+    }
+    return (
+        <div>
+            <div>{state.counter}</div>
+            <button onClick={() => dispatch({type: 'increment'})}>increment</button>
+            <button onClick={() => dispatch({type: 'decrement'})}>decrement</button>
+            <button onClick={() => dispatch({type: 'reset'})}>reset</button>
+        </div>
+    )
+}
+
+
+const ContextTemp = () => {
+    const catchFraze = useContext(contextExample);
+    return (<div>{catchFraze}</div>)
+}
+
+const StateTemp = () => {
+    const [products, setProducts] = useState([])
+    useEffect(() => {
+            (async () => {
+                try {
+                    const products = await axios.get("products.json")
+                    console.log(products)
+                    setProducts(products.data)
+                } catch (e) {
+                    console.log(e)
+                }
+            })()
+        }, []
     )
 
+    return (
+        // <contextExample.Provider value={"Shibidibap"}>
+        //     <ContextTemp/>
+        // </contextExample.Provider>
+        <ReducerTemp/>
+        // products.map((product) => <div key={product.name}>{product.name}</div>
 
-class Board extends React.Component {
-    renderSquare(i) {
-        return <Square
-            value={this.props.squares[i]}
-            onClick={() => this.props.onClick(i)}
-        />;
-    }
-
-    render() {
-        return (
-            <div>
-                <div className="board-row">
-                    {this.renderSquare(0)}
-                    {this.renderSquare(1)}
-                    {this.renderSquare(2)}
-                </div>
-                <div className="board-row">
-                    {this.renderSquare(3)}
-                    {this.renderSquare(4)}
-                    {this.renderSquare(5)}
-                </div>
-                <div className="board-row">
-                    {this.renderSquare(6)}
-                    {this.renderSquare(7)}
-                    {this.renderSquare(8)}
-                </div>
-            </div>
-        );
-    }
+    )
 }
 
-class Game extends React.Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-            history: [{squares: Array(9).fill(null)}],
-            xIsNext: true,
-            stepNumber: 0
-        }
-    }
-
-    handleClick(i) {
-        const history = this.state.history.slice(0, this.state.stepNumber + 1);
-        const current = history[history.length - 1];
-        const squares = current.squares.slice();
-        if (calculateWinner(squares) || squares[i]) {
-            return;
-        }
-        squares[i] = this.state.xIsNext ? 'x' : 'o';
-        this.setState({
-            history: history.concat([{squares: squares}]),
-            xIsNext: !this.state.xIsNext,
-            stepNumber: history.length
-        });
-    }
-
-    jumpTo(step) {
-        this.setState({
-            stepNumber: step,
-            xIsNext: (step % 2) === 0
-        })
-    }
-
-    render() {
-        const history = this.state.history
-        const current = history[this.state.stepNumber]
-        const winner = calculateWinner(current.squares)
-        const moves = history.map((step, move) => {
-            const desc = move ? 'Go to' + move : ' go to game start';
-            return (
-                <li key={move}>
-                    <button onClick={() => this.jumpTo(move)}>{desc}</button>
-                </li>
-            )
-        })
-        let status;
-        if (winner) status = 'the winner is' + winner;
-        else status = this.state.xIsNext ? 'Next player: X' : 'Next player: O';
-        return (
-            <div className="game">
-                <div className="game-board">
-                    <Board
-                        squares={current.squares}
-                        onClick={(i) => this.handleClick(i)}
-                    />
-                </div>
-                <div className="game-info">
-                    <div>{status}</div>
-                    <ol>{moves}</ol>
-                </div>
-            </div>
-        );
-    }
-}
-
-// ========================================
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
-root.render(<Game/>);
+root.render(<StateTemp/>);
 
-function calculateWinner(squares) {
-    const lines = [
-        [0, 1, 2],
-        [3, 4, 5],
-        [6, 7, 8],
-        [0, 3, 6],
-        [1, 4, 7],
-        [2, 5, 8],
-        [0, 4, 8],
-        [2, 4, 6],
-    ];
-    for (let i = 0; i < lines.length; i++) {
-        const [a, b, c] = lines[i];
-        if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
-            return squares[a];
-        }
-    }
-    return null;
-}
